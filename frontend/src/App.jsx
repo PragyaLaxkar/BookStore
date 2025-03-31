@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import PrivateRoute from './components/PrivateRoute';
 import AdminRoute from './components/AdminRoute';
@@ -15,31 +15,33 @@ import AdminOrders from './pages/admin/Orders';
 
 function App() {
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar />
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/books" element={<Books />} />
-          <Route path="/books/:id" element={<BookDetails />} />
-          <Route path="/cart" element={<Cart />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          
-          {/* Protected Routes */}
-          <Route element={<PrivateRoute />}>
-            <Route path="/checkout" element={<Checkout />} />
-          </Route>
+    <BrowserRouter>
+      <div className="min-h-screen bg-gray-50">
+        <Navbar />
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/books" element={<Books />} />
+            <Route path="/books/:id" element={<BookDetails />} />
+            <Route path="/cart" element={<Cart />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            
+            {/* Protected Routes */}
+            <Route element={<PrivateRoute />}>
+              <Route path="/checkout" element={<Checkout />} />
+            </Route>
 
-          {/* Admin Routes */}
-          <Route element={<AdminRoute />}>
-            <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/admin/books" element={<AdminBooks />} />
-            <Route path="/admin/orders" element={<AdminOrders />} />
-          </Route>
-        </Routes>
-      </main>
-    </div>
+            {/* Admin Routes */}
+            <Route element={<AdminRoute />}>
+              <Route path="/admin" element={<AdminDashboard />} />
+              <Route path="/admin/books" element={<AdminBooks />} />
+              <Route path="/admin/orders" element={<AdminOrders />} />
+            </Route>
+          </Routes>
+        </main>
+      </div>
+    </BrowserRouter>
   );
 }
 
