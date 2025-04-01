@@ -4,11 +4,15 @@ WORKDIR /app/frontend
 # Copy package files first for better caching
 COPY frontend/package*.json ./
 RUN npm ci
-# Copy only necessary files
+# Copy frontend source files
 COPY frontend/src ./src
-COPY frontend/public ./public
+COPY frontend/index.html ./
 COPY frontend/*.js ./
 COPY frontend/*.json ./
+
+# Set API URL for frontend build
+ENV VITE_API_URL=http://localhost:5000/api
+
 # Build for production
 RUN npm run build
 
@@ -18,10 +22,8 @@ WORKDIR /app/backend
 # Copy package files first for better caching
 COPY backend/package*.json ./
 RUN npm ci
-# Copy only necessary backend files
+# Copy backend files
 COPY backend ./
-# If you have a build step for backend, add it here
-# RUN npm run build
 
 # Stage 3: Final production image (smaller)
 FROM node:18.12.1-alpine AS production

@@ -1,7 +1,10 @@
 import axios from 'axios';
 
+// Use environment variable if available, otherwise fallback to relative path
+const baseURL = import.meta.env.VITE_API_URL || '/api';
+
 const api = axios.create({
-  baseURL: '/api',
+  baseURL,
 });
 
 // Request interceptor for adding auth token
@@ -18,6 +21,15 @@ api.interceptors.request.use(
   }
 );
 
+// Response interceptor for handling errors
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    console.error('API Error:', error);
+    return Promise.reject(error);
+  }
+);
+
 export const authAPI = {
   login: (credentials) => api.post('/auth/login', credentials),
   register: (userData) => api.post('/auth/register', userData),
@@ -25,7 +37,28 @@ export const authAPI = {
 };
 
 export const bookAPI = {
-  getBooks: (params) => api.get('/books', { params }),
+  getBooks: async (params) => {
+    try {
+      const response = await api.get('/books', { params });
+      // Ensure we always return an array even if the API returns something else
+      if (Array.isArray(response.data)) {
+        return { data: response.data };
+      } else if (response.data && typeof response.data === 'object') {
+        // If it's an object but not an array, check if it has a data property that's an array
+        if (Array.isArray(response.data.data)) {
+          return { data: response.data.data };
+        }
+        // Otherwise return an empty array to prevent map errors
+        console.warn('API returned non-array data for books:', response.data);
+        return { data: [] };
+      }
+      console.warn('Unexpected API response format:', response.data);
+      return { data: [] };
+    } catch (error) {
+      console.error('Error fetching books:', error);
+      return { data: [] };
+    }
+  },
   getBook: (id) => api.get(`/books/${id}`),
   createBook: (bookData) => api.post('/books', bookData),
   updateBook: (id, bookData) => api.put(`/books/${id}`, bookData),
