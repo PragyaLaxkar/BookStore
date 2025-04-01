@@ -1,34 +1,67 @@
 # Stage 1: Build the frontend
-FROM node:18-alpine AS frontend-build
+FROM node:18.12.1-alpine AS frontend-build
 WORKDIR /app/frontend
+# Copy package files first for better caching
 COPY frontend/package*.json ./
-RUN npm install
-COPY frontend .
+RUN npm ci
+# Copy only necessary files
+COPY frontend/src ./src
+COPY frontend/public ./public
+COPY frontend/*.js ./
+COPY frontend/*.json ./
+# Build for production
 RUN npm run build
 
 # Stage 2: Build the backend
-FROM node:18-alpine AS backend-build
+FROM node:18.12.1-alpine AS backend-build
 WORKDIR /app/backend
+# Copy package files first for better caching
 COPY backend/package*.json ./
-RUN npm install
-COPY backend .
+RUN npm ci
+# Copy only necessary backend files
+COPY backend ./
+# If you have a build step for backend, add it here
+# RUN npm run build
 
-# Stage 3: Final image
-FROM node:18-alpine
+# Stage 3: Final production image (smaller)
+FROM node:18.12.1-alpine AS production
+# Add labels for better maintainability
+LABEL maintainer="BookStore Team"
+LABEL version="1.0"
+
+# Set environment to production
+ENV NODE_ENV=production
+# Backend environment variables
+ENV PORT=5000
+ENV MONGODB_URI=mongodb://mongo:27017/bookstore
+ENV JWT_SECRET=your_jwt_secret_key
+ENV CORS_ORIGIN=http://localhost:3000
+# Add any other required environment variables here
+
 WORKDIR /app
 
-# Copy frontend build
+# Copy frontend build artifacts
 COPY --from=frontend-build /app/frontend/dist /app/frontend/dist
 
-# Copy backend
+# Copy backend with only production dependencies
 COPY --from=backend-build /app/backend /app/backend
 
-# Install backend dependencies
+# Copy .env file for backend
+COPY backend/.env /app/backend/.env
+
+# Install production dependencies only
 WORKDIR /app/backend
-RUN npm install --production
+RUN npm ci --only=production && npm cache clean --force
+
+# Install serve for frontend static files
+RUN npm install -g serve
 
 # Expose ports
 EXPOSE 3000 5000
 
-# Start the application
-CMD ["sh", "-c", "npm run dev & serve -s /app/frontend/dist -l 3000"]
+# Add healthcheck
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:5000/api/health || exit 1
+
+# Start the application with a proper init process
+CMD ["sh", "-c", "node /app/backend/server.js & serve -s /app/frontend/dist -l 3000"]

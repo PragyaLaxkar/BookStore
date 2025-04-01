@@ -25,9 +25,6 @@ router.get('/', async (req, res) => {
     }
 
     const books = await Book.find(query);
-    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-    res.setHeader('Pragma', 'no-cache');
-    res.setHeader('Expires', '0');
     res.json(books);
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
